@@ -1,0 +1,602 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.8.9.13224",
+      "templateHash": "17318016208263454521"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "hubname": {
+      "type": "string",
+      "defaultValue": "hub"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "loganalitycshub",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "hubname": {
+            "value": "[parameters('hubname')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.8.9.13224",
+              "templateHash": "4545729372327871009"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "hubname": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "logAnalyticsWorkspaceName": "[format('lg-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2020-08-01",
+              "name": "[variables('logAnalyticsWorkspaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "loganalyticsid": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "vnethub",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "hubname": {
+            "value": "[parameters('hubname')]"
+          },
+          "loganalyticsid": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'loganalitycshub')).outputs.loganalyticsid.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.8.9.13224",
+              "templateHash": "4827839153909359659"
+            }
+          },
+          "parameters": {
+            "hubname": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "loganalyticsid": {
+              "type": "string"
+            },
+            "virtualNetworks_vnet_hub_subnets": {
+              "type": "string",
+              "defaultValue": "[format('vnet-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2020-11-01",
+              "name": "[parameters('virtualNetworks_vnet_hub_subnets')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "172.16.0.0/16"
+                  ]
+                },
+                "dhcpOptions": {
+                  "dnsServers": [
+                    "192.168.88.90",
+                    "192.168.88.91"
+                  ]
+                },
+                "subnets": [
+                  {
+                    "name": "subnet01",
+                    "properties": {
+                      "addressPrefix": "172.16.0.0/24",
+                      "delegations": [],
+                      "privateEndpointNetworkPolicies": "Enabled",
+                      "privateLinkServiceNetworkPolicies": "Enabled"
+                    }
+                  }
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false
+              }
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2020-11-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworks_vnet_hub_subnets'), 'subnet01')]",
+              "properties": {
+                "addressPrefix": "172.16.0.0/24",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_hub_subnets'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2020-11-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworks_vnet_hub_subnets'), 'AzureBastionSubnet')]",
+              "properties": {
+                "addressPrefix": "172.16.251.0/24",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_hub_subnets'), 'GatewaySubnet')]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_hub_subnets'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2020-11-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworks_vnet_hub_subnets'), 'AzureFirewallSubnet')]",
+              "properties": {
+                "addressPrefix": "172.16.252.0/24",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_hub_subnets'), 'AzureBastionSubnet')]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_hub_subnets'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2020-11-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworks_vnet_hub_subnets'), 'GatewaySubnet')]",
+              "properties": {
+                "addressPrefix": "172.16.254.0/24",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_hub_subnets'), 'subnet01')]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_hub_subnets'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Network/virtualNetworks/{0}', parameters('virtualNetworks_vnet_hub_subnets'))]",
+              "name": "diagVnetHub",
+              "properties": {
+                "workspaceId": "[parameters('loganalyticsid')]",
+                "logs": [
+                  {
+                    "category": "VMProtectionAlerts",
+                    "enabled": true
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_hub_subnets'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "subnetgwid": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_hub_subnets'), 'GatewaySubnet')]"
+            },
+            "subnetafwid": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_hub_subnets'), 'AzureFirewallSubnet')]"
+            },
+            "subnetbastionid": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_hub_subnets'), 'AzureBastionSubnet')]"
+            },
+            "subnetid": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_hub_subnets'), 'subnet01')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'loganalitycshub')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "vpngwhub",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "hubname": {
+            "value": "[parameters('hubname')]"
+          },
+          "subnetgwid": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'vnethub')).outputs.subnetgwid.value]"
+          },
+          "loganalyticsid": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'loganalitycshub')).outputs.loganalyticsid.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.8.9.13224",
+              "templateHash": "17943009311071612942"
+            }
+          },
+          "parameters": {
+            "hubname": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "subnetgwid": {
+              "type": "string"
+            },
+            "publicIPAddresses_vpngw_hub_PIP": {
+              "type": "string",
+              "defaultValue": "[format('pip-vpng-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]"
+            },
+            "virtualNetworkGateways_vpngw_hub": {
+              "type": "string",
+              "defaultValue": "[format('vpng-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]"
+            },
+            "loganalyticsid": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2022-01-01",
+              "name": "[parameters('publicIPAddresses_vpngw_hub_PIP')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+              },
+              "properties": {
+                "ipAddress": "",
+                "publicIPAddressVersion": "IPv4",
+                "publicIPAllocationMethod": "Static",
+                "idleTimeoutInMinutes": 4,
+                "ipTags": []
+              }
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworkGateways",
+              "apiVersion": "2022-01-01",
+              "name": "[parameters('virtualNetworkGateways_vpngw_hub')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "enablePrivateIpAddress": false,
+                "ipConfigurations": [
+                  {
+                    "name": "default",
+                    "properties": {
+                      "privateIPAllocationMethod": "Dynamic",
+                      "publicIPAddress": {
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_vpngw_hub_PIP'))]"
+                      },
+                      "subnet": {
+                        "id": "[parameters('subnetgwid')]"
+                      }
+                    }
+                  }
+                ],
+                "sku": {
+                  "name": "VpnGw1",
+                  "tier": "VpnGw1"
+                },
+                "gatewayType": "Vpn",
+                "vpnType": "RouteBased",
+                "enableBgp": false,
+                "activeActive": false,
+                "vpnGatewayGeneration": "Generation1"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_vpngw_hub_PIP'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2017-05-01-preview",
+              "scope": "[format('Microsoft.Network/virtualNetworkGateways/{0}', parameters('virtualNetworkGateways_vpngw_hub'))]",
+              "name": "[format('{0}.lg', parameters('virtualNetworkGateways_vpngw_hub'))]",
+              "properties": {
+                "workspaceId": "[parameters('loganalyticsid')]",
+                "logs": [
+                  {
+                    "category": "GatewayDiagnosticLog",
+                    "enabled": true
+                  },
+                  {
+                    "category": "TunnelDiagnosticLog",
+                    "enabled": true
+                  },
+                  {
+                    "category": "RouteDiagnosticLog",
+                    "enabled": true
+                  },
+                  {
+                    "category": "IKEDiagnosticLog",
+                    "enabled": true
+                  },
+                  {
+                    "category": "P2SDiagnosticLog",
+                    "enabled": true
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworkGateways', parameters('virtualNetworkGateways_vpngw_hub'))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'loganalitycshub')]",
+        "[resourceId('Microsoft.Resources/deployments', 'vnethub')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "bastionhub",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "hubname": {
+            "value": "[parameters('hubname')]"
+          },
+          "subnetbastionid": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'vnethub')).outputs.subnetbastionid.value]"
+          },
+          "loganalyticsid": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'loganalitycshub')).outputs.loganalyticsid.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.8.9.13224",
+              "templateHash": "14208463905509541181"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "hubname": {
+              "type": "string"
+            },
+            "subnetbastionid": {
+              "type": "string"
+            },
+            "loganalyticsid": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2022-01-01",
+              "name": "[format('pip-bastion-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard"
+              },
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              }
+            },
+            {
+              "type": "Microsoft.Network/bastionHosts",
+              "apiVersion": "2022-01-01",
+              "name": "[format('bas-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "bastionIpconf",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetbastionid')]"
+                      },
+                      "publicIPAddress": {
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('pip-bastion-{0}-prod-{1}-01', parameters('hubname'), parameters('location')))]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', format('pip-bastion-{0}-prod-{1}-01', parameters('hubname'), parameters('location')))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'loganalitycshub')]",
+        "[resourceId('Microsoft.Resources/deployments', 'vnethub')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "afwhub",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "hubname": {
+            "value": "[parameters('hubname')]"
+          },
+          "subnetafwid": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'vnethub')).outputs.subnetafwid.value]"
+          },
+          "loganalyticsid": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'loganalitycshub')).outputs.loganalyticsid.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.8.9.13224",
+              "templateHash": "1852727476591701612"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string"
+            },
+            "hubname": {
+              "type": "string"
+            },
+            "subnetafwid": {
+              "type": "string"
+            },
+            "loganalyticsid": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2019-11-01",
+              "name": "[format('pip-afw-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard"
+              },
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              }
+            },
+            {
+              "type": "Microsoft.Network/azureFirewalls",
+              "apiVersion": "2020-05-01",
+              "name": "[format('afw-{0}-prod-{1}-01', parameters('hubname'), parameters('location'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "AZFW_VNet",
+                  "tier": "Standard"
+                },
+                "threatIntelMode": "Alert",
+                "ipConfigurations": [
+                  {
+                    "name": "afwipconfig",
+                    "properties": {
+                      "publicIPAddress": {
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('pip-afw-{0}-prod-{1}-01', parameters('hubname'), parameters('location')))]"
+                      },
+                      "subnet": {
+                        "id": "[parameters('subnetafwid')]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', format('pip-afw-{0}-prod-{1}-01', parameters('hubname'), parameters('location')))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'loganalitycshub')]",
+        "[resourceId('Microsoft.Resources/deployments', 'vnethub')]"
+      ]
+    }
+  ]
+}

@@ -5,14 +5,14 @@ param adminUsername string
 param adminPassword string
 
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
-  name: 'st${toLower(hostname)}${uniqueString(resourceGroup().id)}'
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'Storage'
-}
+// resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
+//   name: 'st${toLower(hostname)}${uniqueString(resourceGroup().id)}'
+//   location: location
+//   sku: {
+//     name: 'Standard_LRS'
+//   }
+//   kind: 'Storage'
+// }
 
 // resource publicIp 'Microsoft.Network/publicIPAddresses@2021-05-01' = {
 //   name: 'pip-${hostname}-${location}-PIP01'
@@ -76,7 +76,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   location: location
   properties:{
     hardwareProfile: {
-      vmSize: 'Standard_D2as_v5'
+      vmSize: 'Standard_B2s'
     }
     osProfile: {
       computerName: hostname

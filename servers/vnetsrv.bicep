@@ -1,6 +1,6 @@
 param vnetname string
 param location string
-param virtualNetworks_vnet_subnets string = 'vnet-${vnetname}-prod-${location}-02'
+param virtualNetworks_vnet_subnets string = 'vnet-${vnetname}-prod-${location}-01'
 
 resource virtualNetworks_vnetsrv_net0_resource 'Microsoft.Network/virtualNetworks@2020-11-01' = {
   name: virtualNetworks_vnet_subnets

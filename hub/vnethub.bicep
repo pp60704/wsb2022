@@ -12,6 +12,12 @@ resource virtualNetworks_vnet_hub_net0_resource 'Microsoft.Network/virtualNetwor
         '172.16.0.0/16'
       ]
     }
+    // dhcpOptions:{
+    //   dnsServers:[
+    //     '192.168.88.90'
+    //     '192.168.88.91'
+    //   ]
+    // }
     subnets: [
       {
         name: 'subnet01'
@@ -39,6 +45,9 @@ resource virtualNetworks_vnet_hub_net0_name_subnet01 'Microsoft.Network/virtualN
     privateEndpointNetworkPolicies: 'Enabled'
     privateLinkServiceNetworkPolicies: 'Enabled'
   }
+  dependsOn:[
+    virtualNetworks_vnet_hub_net0_resource
+  ]
 }
 
 resource virtualNetworks_vnet_hub_net0_name_Bastion 'Microsoft.Network/virtualNetworks/subnets@2020-11-01' = {
@@ -50,6 +59,9 @@ resource virtualNetworks_vnet_hub_net0_name_Bastion 'Microsoft.Network/virtualNe
     privateEndpointNetworkPolicies: 'Enabled'
     privateLinkServiceNetworkPolicies: 'Enabled'
   }
+  dependsOn:[
+    virtualNetworks_vnet_hub_net0_GatewaySubnet
+  ]
 }
 resource virtualNetworks_vnet_hub_net0_name_Firewall 'Microsoft.Network/virtualNetworks/subnets@2020-11-01' = {
   parent: virtualNetworks_vnet_hub_net0_resource
@@ -60,6 +72,9 @@ resource virtualNetworks_vnet_hub_net0_name_Firewall 'Microsoft.Network/virtualN
     privateEndpointNetworkPolicies: 'Enabled'
     privateLinkServiceNetworkPolicies: 'Enabled'
   }
+  dependsOn:[
+    virtualNetworks_vnet_hub_net0_name_Bastion
+  ]
 }
 
 resource virtualNetworks_vnet_hub_net0_GatewaySubnet 'Microsoft.Network/virtualNetworks/subnets@2020-11-01' = {
@@ -71,6 +86,9 @@ resource virtualNetworks_vnet_hub_net0_GatewaySubnet 'Microsoft.Network/virtualN
     privateEndpointNetworkPolicies: 'Enabled'
     privateLinkServiceNetworkPolicies: 'Enabled'
   }
+  dependsOn:[
+    virtualNetworks_vnet_hub_net0_name_subnet01
+  ]
 }
 
 resource diagVnetHub 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {

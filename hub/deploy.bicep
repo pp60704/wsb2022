@@ -21,17 +21,18 @@ module vnetHub 'vnethub.bicep' = {
   dependsOn:[loganalytics]
 }
 
-// module vpnGW 'vpngw.bicep' = {
-//   name: 'vpngwhub'
-//   params:{
-//     location: location
-//     hubname: hubname
-//     subnetgwid: vnetHub.outputs.subnetgwid
-//   }  
-//   dependsOn:[
-//     vnetHub
-//   ]
-// }
+module vpnGW 'vpngw.bicep' = {
+  name: 'vpngwhub'
+  params:{
+    location: location
+    hubname: hubname
+    subnetgwid: vnetHub.outputs.subnetgwid
+    loganalyticsid: loganalytics.outputs.loganalyticsid
+  }  
+  dependsOn:[
+    vnetHub
+  ]
+}
 
 module hubbastion 'bastion.bicep' = {
   name: 'bastionhub'
